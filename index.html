@@ -49,21 +49,27 @@ canvas { display: block; width: 100%; height: 100%; }
 #dlgNext { text-align: right; padding: 0 12px 10px; font-size: 16px; color: #8a6a3a; animation: blink 1s steps(1) infinite; }
 @keyframes blink { 50% { opacity: 0; } }
 
-.modal { position: absolute; inset: 0; z-index: 20; display: none; align-items: center; justify-content: center;
-  background: rgba(10,6,2,.72); padding: 14px; }
-.modal .card { width: min(94%, 500px); max-height: 88%; overflow: hidden; display: flex; flex-direction: column; }
+.modal { position: fixed; inset: 0; z-index: 50; display: none; align-items: center; justify-content: center;
+  background: rgba(10,6,2,.82); padding: 14px; }
+.modal .card { width: min(94%, 460px); max-height: 92vh; overflow: hidden; display: flex; flex-direction: column; }
 .modal .body { padding: 14px; overflow: auto; font-size: 19px; line-height: 1.35; }
 .closeX { cursor: pointer; font-family: 'Press Start 2P', monospace; font-size: 9px; color: #ffd27a; }
 #carta .body { white-space: pre-wrap; background: repeating-linear-gradient(#efe6cf, #efe6cf 30px, #e2d4b2 31px); }
-#fotos .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 14px; overflow: auto; }
-.photo { background: #1a1008; border: 2px solid #5a3a22; display: flex; align-items: center;
-  justify-content: center; overflow: hidden; position: relative; font-size: 28px; color: #6a5636; }
-.photo img { width: 100%; height: auto; display:block; }
-.photo.vid { aspect-ratio: 3/4; }
-.photo.vid video { width: 100%; height: 100%; object-fit: contain; background:#000; }
-.photo .playbadge { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-  font-size:30px; color:#fff; background:rgba(0,0,0,.28); pointer-events:none; text-shadow:0 2px 6px #000; }
-.photo .cap { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(90,58,34,.85); color: #ffe9b0; font-size: 13px; padding: 2px 4px; }
+#fotos .card { width: min(94%, 460px); }
+.carousel { position: relative; padding: 12px; }
+.slideWrap { width: 100%; height: min(62vh, 460px); min-height: 220px; background: #140d07;
+  border: 2px solid #5a3a22; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.slideWrap img, .slideWrap video { max-width: 100%; max-height: 100%; width: auto; height: auto;
+  object-fit: contain; display: block; }
+.navArrow { position: absolute; top: 50%; transform: translateY(-50%); width: 42px; height: 54px;
+  background: rgba(232,220,192,.92); border: 2px solid #5a3a22; color: #5a3a22; font-size: 18px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; border-radius: 6px; z-index: 2; }
+.navArrow:active { background: #ffd27a; }
+.navArrow.prev { left: 16px; } .navArrow.next { right: 16px; }
+.counter { text-align: center; font-family: 'Press Start 2P', monospace; font-size: 9px; color: #5a3a22; margin-top: 10px; }
+.dots { display: flex; gap: 6px; justify-content: center; margin-top: 8px; flex-wrap: wrap; }
+.dots .dot { width: 8px; height: 8px; border-radius: 50%; background: #c9b489; border: 1px solid #5a3a22; cursor: pointer; }
+.dots .dot.on { background: #5a3a22; }
 #cupones .body { display: flex; flex-direction: column; gap: 10px; }
 .cupon { display: flex; gap: 10px; align-items: center; padding: 10px; background: #fff8e6; border: 2px dashed #5a3a22; }
 .cupon .ico { font-size: 26px; }
@@ -187,7 +193,13 @@ canvas { display: block; width: 100%; height: 100%; }
 
     <div class="modal" id="fotos"><div class="card roWin">
       <div class="roTitle"><span class="tl"><img id="icoHeart"> RECUERDOS</span><span class="closeX" data-close>[ X ]</span></div>
-      <div class="grid" id="fotosGrid"></div>
+      <div class="carousel" id="carousel">
+        <div class="slideWrap" id="slideWrap"></div>
+        <button class="navArrow prev" id="prevFoto" aria-label="Anterior">◀</button>
+        <button class="navArrow next" id="nextFoto" aria-label="Siguiente">▶</button>
+        <div class="counter" id="fotoCounter">1 / 1</div>
+        <div class="dots" id="fotoDots"></div>
+      </div>
     </div></div>
 
     <div class="modal" id="cupones"><div class="card roWin">
@@ -457,23 +469,45 @@ document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{ i
 
 document.getElementById('cartaBody').textContent = CONFIG.carta;
 (function(){
-  const grid=document.getElementById('fotosGrid');
-  CONFIG.fotos.forEach(f=>{
-    const d=document.createElement('div'); d.className='photo';
+  // ---- Carrusel de recuerdos (una foto/video a la vez) ----
+  const wrap=document.getElementById('slideWrap');
+  const dotsBox=document.getElementById('fotoDots');
+  const counter=document.getElementById('fotoCounter');
+  const items=CONFIG.fotos;
+  let cur=0;
+  // dots
+  items.forEach((_,i)=>{ const dt=document.createElement('div'); dt.className='dot'; dt.addEventListener('click',()=>go(i)); dotsBox.appendChild(dt); });
+  function render(){
+    // pausar cualquier video antes de cambiar
+    const pv=wrap.querySelector('video'); if(pv){ try{pv.pause();}catch(e){} }
+    const f=items[cur]; wrap.innerHTML='';
     if(f.video){
-      d.classList.add('vid');
-      d.innerHTML=`<video src="${f.video}" playsinline controls preload="metadata"></video>`
-        + (f.cap?`<span class="cap">${f.cap}</span>`:'')+`<span class="playbadge">▶</span>`;
-      const v=d.querySelector('video'), b=d.querySelector('.playbadge');
-      v.addEventListener('play',()=>b.style.display='none');
-      v.addEventListener('pause',()=>b.style.display='flex');
+      const v=document.createElement('video');
+      v.src=f.video; v.playsInline=true; v.controls=true; v.preload='metadata';
+      wrap.appendChild(v);
     } else if(f.src){
-      d.innerHTML=`<img src="${f.src}" alt="">`+(f.cap?`<span class="cap">${f.cap}</span>`:'');
+      const im=document.createElement('img'); im.src=f.src; im.alt=''; wrap.appendChild(im);
     } else {
-      d.innerHTML=`📷<span class="cap">${f.cap||'placeholder'}</span>`;
+      wrap.textContent='📷';
     }
-    grid.appendChild(d);
+    counter.textContent=(cur+1)+' / '+items.length;
+    [...dotsBox.children].forEach((d,i)=>d.classList.toggle('on',i===cur));
+  }
+  function go(i){ cur=(i+items.length)%items.length; render(); }
+  document.getElementById('prevFoto').addEventListener('click',()=>go(cur-1));
+  document.getElementById('nextFoto').addEventListener('click',()=>go(cur+1));
+  // swipe en móvil
+  let tx=0;
+  wrap.addEventListener('touchstart',e=>{ tx=e.changedTouches[0].clientX; },{passive:true});
+  wrap.addEventListener('touchend',e=>{ const dx=e.changedTouches[0].clientX-tx;
+    if(Math.abs(dx)>40){ go(dx<0?cur+1:cur-1); } },{passive:true});
+  // flechas de teclado cuando el modal está abierto
+  addEventListener('keydown',e=>{
+    if(document.getElementById('fotos').style.display!=='flex') return;
+    if(e.key==='ArrowRight') go(cur+1);
+    if(e.key==='ArrowLeft') go(cur-1);
   });
+  render();
   const cb=document.getElementById('cuponesBody');
   CONFIG.cupones.forEach(c=>{
     const d=document.createElement('div'); d.className='cupon';
