@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Ragna-Cumple · JuanCa</title>
+<title>MES QUEST 💕</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -56,10 +56,11 @@ canvas { display: block; width: 100%; height: 100%; }
 .closeX { cursor: pointer; font-family: 'Press Start 2P', monospace; font-size: 9px; color: #ffd27a; }
 #carta .body { white-space: pre-wrap; background: repeating-linear-gradient(#efe6cf, #efe6cf 30px, #e2d4b2 31px); }
 #fotos .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 14px; overflow: auto; }
-.photo { aspect-ratio: 1; background: #cbb98f; border: 2px solid #5a3a22; display: flex; align-items: center;
+.photo { background: #1a1008; border: 2px solid #5a3a22; display: flex; align-items: center;
   justify-content: center; overflow: hidden; position: relative; font-size: 28px; color: #6a5636; }
-.photo img { width: 100%; height: 100%; object-fit: cover; }
-.photo.vid video { width: 100%; height: 100%; object-fit: cover; background:#000; }
+.photo img { width: 100%; height: auto; display:block; }
+.photo.vid { aspect-ratio: 3/4; }
+.photo.vid video { width: 100%; height: 100%; object-fit: contain; background:#000; }
 .photo .playbadge { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
   font-size:30px; color:#fff; background:rgba(0,0,0,.28); pointer-events:none; text-shadow:0 2px 6px #000; }
 .photo .cap { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(90,58,34,.85); color: #ffe9b0; font-size: 13px; padding: 2px 4px; }
@@ -235,7 +236,7 @@ const CONFIG = {
   spotifyEmbed: "https://open.spotify.com/embed/track/1cMFYGtNoh5x3hCWrHAVca?utm_source=generator",
 
   // 💌 CARTA
-  carta: "¡Hola, mi amor! Qué bueno que ya llegaste aquí, jejeje. Te mando esta cartita para decirte tantas cosas que siento por ti, y en este tiempo he aprendido a tu ladito.\n\nTe lo he dicho varias veces, pero estar contigo me inspira a ser esa persona llena de amor para dar y compartir contigo. Veo en ti un hombre cariñoso, bueno, decidido, que sabe lo que quiere y hace lo necesario para conseguirlo; además de guapo y, por supuesto, excelente amante, jaja. ;)\n\nMi cielo, cada día agradezco a la vida que te haya puesto en mi camino y que me haya preparado para estar contigo. Me emociona todo lo que está por venir: quiero construir a tu lado, conocer cada cosa buena y \"no tan buena\" de ti y, aun así, seguir formando un hogarcito y un lugar juntos.\n\nTe amo, te amo con todo mi ser. Y quiero seguirte amando hasta que ya no estemos en el mismo plano (¿o vuelvo como fantasma?), jajaja.\n\nGracias por este tiempo, y que vengan muchos meses más. ¡Aquí me tienes para escucharte, apoyarte, reírte, chicotearte, mimarte y ser tu compañera de equipo y de vida!",
+  carta: "¡Hola, mi amor! Qué bueno que ya llegaste aquí, jejeje. Te mando esta cartita para decirte tantas cosas que siento por ti, y en este tiempo he aprendido a tu ladito.\n\nTe lo he dicho varias veces, pero estar contigo me inspira a ser esa persona llena de amor para dar y compartir contigo. Veo en ti un hombre cariñoso, bueno, decidido, que sabe lo que quiere y hace lo necesario para conseguirlo; además de guapo y, por supuesto, excelente amante, jaja. ;)\n\nMi cielo, cada día agradezco a la vida que te haya puesto en mi camino y que me haya preparado para estar contigo. Me emociona todo lo que está por venir: quiero construir a tu lado, conocer cada cosa buena y \"no tan buena\" de ti y, aun así, seguir formando un hogarcito y un lugar juntos.\n\nTe amo, te amo con todo mi ser. Y quiero seguirte amando hasta que ya no estemos en el mismo plano (¿o vuelvo como fantasma?), jajaja.\n\nGracias por este tiempo, y que vengan muchos meses más. ¡Aquí me tienes para escucharte, apoyarte, reírnos, chicotearte, mimarte y ser tu compañera de equipo y de vida!",
 
   // 📷 FOTOS + VIDEO (video.mp4 va como archivo aparte, junto al HTML)
   fotos: [
@@ -441,9 +442,14 @@ function showReward(q){
 }
 
 /* modales */
-function openModal(id){ modalOpen=true; document.getElementById('hint').style.display='none'; document.getElementById(id).style.display='flex'; }
+function openModal(id){
+  modalOpen=true; document.getElementById('hint').style.display='none'; document.getElementById(id).style.display='flex';
+  if(id==='playlist' && bgm){ bgm.pause(); }  // silencia la música del juego mientras suena la canción
+}
 function closeModal(){
+  const cancionAbierta = document.getElementById('playlist').style.display==='flex';
   document.querySelectorAll('.modal').forEach(m=>m.style.display='none'); modalOpen=false;
+  if(cancionAbierta && bgm && started && !bgm.muted){ bgm.play().catch(()=>{}); }  // reanuda la música al cerrar la canción
   if(questsDone()===quests.length){ setTimeout(showWin, 350); }
 }
 document.querySelectorAll('[data-close]').forEach(x=>x.addEventListener('click',closeModal));
